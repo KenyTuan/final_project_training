@@ -1,0 +1,43 @@
+spring:
+  application:
+    name: FinalProject
+  datasource:
+    url: jdbc:mysql://${MYSQL_HOST:localhost}:3301/DEV_demo
+    username: root
+    password: 123456
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    database-platform: org.hibernate.dialect.MySQLDialect
+    show-sql: true
+  mail:
+    username: 2154810088@vaa.edu.vn
+    port: 25
+    password: khik siff pedj yebm
+    properties:
+      mail:
+        smtp:
+          starttls:
+            required: true
+            auth: true
+            protocol: smtp
+            starttls:
+              enable: true
+
+
+application:
+  security:
+    jwt:
+      secret-key: 034c3faf5961d9061cd1a14ef9f7012a58ef565714aae0850de136aa9b3f4f74
+      expiration: 86400000
+      refresh-token:
+        expiration: 604800000
+
+server:
+  port: 8080
+springdoc:
+  api-docs:
+    path: /api-docs
+  swagger-ui:
+    path: /swagger-ui.html

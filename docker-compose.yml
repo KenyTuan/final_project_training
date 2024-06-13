@@ -1,0 +1,12 @@
+version: "3.0"
+
+services:
+  mysql:
+    container_name: db_demo
+    image: mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: 123456
+      MYSQL_DATABASE: DEV_demo
+    ports:
+      - '3301:3306'
