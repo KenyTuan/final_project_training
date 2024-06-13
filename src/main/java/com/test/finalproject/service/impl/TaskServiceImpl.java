@@ -73,8 +73,12 @@ public class TaskServiceImpl implements TaskService {
     @Override
     @Transactional
     public TaskRes updateTaskCompleted(int id) {
-        final Task task = taskRepository.findByIdAndStatus(id,ProgressStatus.TODO)
-                .orElseThrow(() -> new NotFoundException("404", "Task not found or completed"));
+        final Task task = taskRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException("404", "Task not found"));
+
+        if (task.getStatus() != ProgressStatus.TODO) {
+            throw new NotFoundException("404", "Task not completed");
+        }
 
         task.setStatus(ProgressStatus.COMPLETE);
         task.setCompleteDate(new Date(System.currentTimeMillis()));
@@ -86,8 +90,11 @@ public class TaskServiceImpl implements TaskService {
     @Override
     @Transactional
     public void deleteTask(int id) {
-        final Task task = taskRepository.findByIdAndStatus(id,ProgressStatus.TODO)
-                        .orElseThrow(() -> new NotFoundException("404", "Task not found or completed"));
+        final Task task = taskRepository.findById(id)
+                        .orElseThrow(() -> new NotFoundException("404", "Task not found"));
+        if (task.getStatus() != ProgressStatus.TODO) {
+            throw new NotFoundException("404", "Task not completed");
+        }
         taskRepository.delete(task);
     }
 
