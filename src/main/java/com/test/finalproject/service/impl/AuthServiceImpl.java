@@ -43,6 +43,14 @@ public class AuthServiceImpl implements AuthService {
         final User user = userRepository.findByUsername(req.getUsername())
                 .orElseThrow(() -> new NotFoundException("404", "User Not Found"));
 
+        if (!passwordEncoder.matches(req.getPassword(), user.getPassword())) {
+            throw new NotFoundException("404", "Wrong Password");
+        }
+
+        if (!user.getStatus().equals(AccountStatus.ACTIVE)) {
+            throw new NotFoundException("404", "Account is locked");
+        }
+
         authenticationManager
                 .authenticate(new UsernamePasswordAuthenticationToken(req.getUsername(), req.getPassword()));
 

@@ -1,7 +1,7 @@
 package com.test.finalproject.model.dtos.auth;
 
 import jakarta.validation.constraints.Email;
-import jakarta.validation.constraints.Size;
+import jakarta.validation.constraints.Pattern;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
@@ -12,9 +12,15 @@ public class ForgotPasswordReq {
     @Email(message = "Email Invalid")
     private String email;
 
-    @Size(min = 8, message = "New Password Invalid")
+    @Pattern(
+            regexp = "^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[@#$%^&+=])(?=\\S+$).{8,20}$",
+            message = "Password Invalid"
+    )
     private String newPassword;
 
-    @Size(min = 8, message = "Old Password Invalid")
+    @Pattern(
+            regexp = "^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[@#$%^&+=])(?=\\S+$).{8,20}$",
+            message = "Password Invalid"
+    )
     private String oldPassword;
 }
