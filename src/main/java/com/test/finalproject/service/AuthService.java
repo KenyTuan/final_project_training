@@ -1,9 +1,6 @@
 package com.test.finalproject.service;
 
-import com.test.finalproject.model.dtos.auth.AuthReq;
-import com.test.finalproject.model.dtos.auth.AuthRes;
-import com.test.finalproject.model.dtos.auth.ForgotPasswordReq;
-import com.test.finalproject.model.dtos.auth.RegisterReq;
+import com.test.finalproject.model.dtos.auth.*;
 
 public interface AuthService {
 
@@ -11,10 +8,11 @@ public interface AuthService {
 
     AuthRes register(RegisterReq req);
 
-    void changePassword(ForgotPasswordReq req,String token);
+    void changePassword(ChangePasswordReq req, String token);
 
-    void createVerification(String tokenUser);
+    void createVerification(String email);
 
-    void confirmVerification(String token,String tokenUser);
+    void confirmVerification(String token,String email);
 
+    void forgotPassword(ForgotPasswordReq req);
 }

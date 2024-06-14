@@ -5,10 +5,7 @@ import com.test.finalproject.entity.User;
 import com.test.finalproject.enums.AccountStatus;
 import com.test.finalproject.exception.BadRequestException;
 import com.test.finalproject.exception.NotFoundException;
-import com.test.finalproject.model.dtos.auth.AuthReq;
-import com.test.finalproject.model.dtos.auth.AuthRes;
-import com.test.finalproject.model.dtos.auth.ForgotPasswordReq;
-import com.test.finalproject.model.dtos.auth.RegisterReq;
+import com.test.finalproject.model.dtos.auth.*;
 import com.test.finalproject.repository.UserRepository;
 import com.test.finalproject.service.impl.AuthServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
@@ -18,7 +15,6 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.util.Optional;
@@ -112,34 +108,34 @@ public class AuthServiceTest {
 
     @Test
     public void testForgotPassword_WhenSuccess() {
-        ForgotPasswordReq forgotPasswordReq = ForgotPasswordReq.builder().oldPassword("12345678").newPassword("123456789").build();
+        ChangePasswordReq changePasswordReq = ChangePasswordReq.builder().oldPassword("12345678").newPassword("123456789").build();
         String token ="token";
 
         when(jwtUtil.extractUsername(token)).thenReturn("votuan13");
         when(userRepository.findByUsername(anyString())).thenReturn(Optional.of(user));
         when(passwordEncoder.matches(anyString(), anyString())).thenReturn(true);
 
-        authService.changePassword(forgotPasswordReq, "token");
+        authService.changePassword(changePasswordReq, "token");
 
         verify(userRepository).save(user);
     }
 
     @Test
     public void testForgotPassword_WhenNotMatchPassword() {
-        ForgotPasswordReq forgotPasswordReq = ForgotPasswordReq.builder().oldPassword("12345678").newPassword("123456723").build();
+        ChangePasswordReq changePasswordReq = ChangePasswordReq.builder().oldPassword("12345678").newPassword("123456723").build();
 
         when(userRepository.findByUsername(anyString())).thenReturn(Optional.of(user));
         lenient().when(passwordEncoder.matches(anyString(), anyString())).thenReturn(false);
 
-        assertThrows(BadRequestException.class, () -> authService.changePassword(forgotPasswordReq, "token"));
+        assertThrows(BadRequestException.class, () -> authService.changePassword(changePasswordReq, "token"));
     }
 
     @Test
     public void testForgotPassword_WhenNotFoundUser() {
-        ForgotPasswordReq forgotPasswordReq = ForgotPasswordReq.builder().oldPassword("12345678").newPassword("123456723").build();
+        ChangePasswordReq changePasswordReq = ChangePasswordReq.builder().oldPassword("12345678").newPassword("123456723").build();
 
         when(userRepository.findByUsername(anyString())).thenReturn(Optional.empty());
 
-        assertThrows(NotFoundException.class, () -> authService.changePassword(forgotPasswordReq, "token"));
+        assertThrows(NotFoundException.class, () -> authService.changePassword(changePasswordReq, "token"));
     }
 }

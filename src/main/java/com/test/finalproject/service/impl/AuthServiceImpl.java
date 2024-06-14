@@ -7,10 +7,7 @@ import com.test.finalproject.enums.AccountStatus;
 import com.test.finalproject.exception.BadRequestException;
 import com.test.finalproject.exception.NotFoundException;
 import com.test.finalproject.model.converter.UserDtoConverter;
-import com.test.finalproject.model.dtos.auth.AuthReq;
-import com.test.finalproject.model.dtos.auth.AuthRes;
-import com.test.finalproject.model.dtos.auth.ForgotPasswordReq;
-import com.test.finalproject.model.dtos.auth.RegisterReq;
+import com.test.finalproject.model.dtos.auth.*;
 import com.test.finalproject.repository.UserRepository;
 import com.test.finalproject.repository.VerifyEmailRepository;
 import com.test.finalproject.service.AuthService;
@@ -28,7 +25,7 @@ import java.util.UUID;
 @Service
 @RequiredArgsConstructor
 public class AuthServiceImpl implements AuthService {
-    private static final int EXPIRATION = 60 * 24;
+    private static final int EXPIRATION = 60 * 15 *1000;
 
     private final PasswordEncoder passwordEncoder;
 
@@ -75,7 +72,7 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
-    public void changePassword(ForgotPasswordReq req, String token) {
+    public void changePassword(ChangePasswordReq req, String token) {
 
         String username = jwtUtil.extractUsername(token.substring(7));
 
@@ -93,15 +90,14 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     @Transactional
-    public void createVerification(String tokenUser) {
-        String username = jwtUtil.extractUsername(tokenUser.substring(7));
+    public void createVerification(String email) {
 
-        final User user = userRepository.findByUsername(username)
+        final User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new NotFoundException("404", "User Not Found"));
         String token = UUID.randomUUID().toString();
         VerifyEmail verifyEmail = VerifyEmail.builder()
                 .token(token)
-                .expiryDate(new Timestamp(System.currentTimeMillis() + EXPIRATION * 60 * 1000))
+                .expiryDate(new Timestamp(System.currentTimeMillis() + EXPIRATION))
                 .user(user).build();
 
         verifyEmailRepository.save(verifyEmail);
@@ -111,18 +107,27 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
-    public void confirmVerification(String token, String tokenUser) {
-        String username = jwtUtil.extractUsername(tokenUser.substring(7));
+    public void confirmVerification(String token, String email) {
 
-        final User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new NotFoundException("404", "User Not Found"));
-
-        final VerifyEmail verifyEmail = verifyEmailRepository.findByUserEmailAndToken(user.getEmail(),token)
+        final VerifyEmail verifyEmail = verifyEmailRepository.findByUserEmailAndToken(email,token)
                 .orElseThrow(() -> new NotFoundException("404", "Token Verify Not Found"));
 
-        if(!verifyEmail.isTokenExpired()){
+        if(verifyEmail.isTokenExpired()){
             throw new BadRequestException("400","Token Expired");
         }
+    }
+
+    @Override
+    public void forgotPassword(ForgotPasswordReq req) {
+        final User user = userRepository.findByEmail(req.getEmail())
+                .orElseThrow(() -> new NotFoundException("404","User not found"));
+
+        if(!passwordEncoder.matches(req.getOldPassword(), user.getPassword())){
+            throw new BadRequestException("400","Not Match Old Password");
+        }
+
+        user.setPassword(passwordEncoder.encode(req.getNewPassword()));
+        userRepository.save(user);
     }
 
 }
