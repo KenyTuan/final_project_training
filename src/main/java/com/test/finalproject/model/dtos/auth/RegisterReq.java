@@ -2,6 +2,7 @@ package com.test.finalproject.model.dtos.auth;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import lombok.Builder;
 import lombok.Getter;
@@ -13,7 +14,10 @@ public class RegisterReq {
     @Size(min = 5,max = 255,message = "Username Invalid!")
     private String username;
 
-    @Size(min = 8, message = "Password Invalid!")
+    @Pattern(
+            regexp = "^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[@#$%^&+=])(?=\\S+$).{8,20}$",
+            message = "Password Invalid"
+    )
     private String password;
 
     @Email(message = "Email Invalid!")

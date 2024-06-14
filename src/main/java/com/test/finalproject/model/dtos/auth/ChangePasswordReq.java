@@ -1,6 +1,6 @@
 package com.test.finalproject.model.dtos.auth;
 
-import jakarta.validation.constraints.Size;
+import jakarta.validation.constraints.Pattern;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
@@ -8,10 +8,16 @@ import lombok.Setter;
 @Getter @Setter @Builder
 public class ChangePasswordReq {
 
-    @Size(min = 8, message = "New Password Invalid")
+    @Pattern(
+            message = "Password Invalid",
+            regexp = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\\\d)(?=.*[@$!%*?&])[A-Za-z\\\\d@$!%*?&]{8,}$"
+    )
     private String newPassword;
 
-    @Size(min = 8, message = "Old Password Invalid")
+    @Pattern(
+            message = "Password Invalid",
+            regexp = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\\\d)(?=.*[@$!%*?&])[A-Za-z\\\\d@$!%*?&]{8,}$"
+    )
     private String oldPassword;
 
 
