@@ -1,5 +1,6 @@
 package com.test.finalproject.service.impl;
 
+import com.test.finalproject.constants.MessageException;
 import com.test.finalproject.entity.User;
 import com.test.finalproject.enums.AccountStatus;
 import com.test.finalproject.exception.NotFoundException;
@@ -28,15 +29,16 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional
-    public void updateUserLock(int id) {
+    public UserRes updateUserLock(int id) {
         final User user = userRepository.findById(id)
-                .orElseThrow(() -> new NotFoundException("404","User not found"));
+                .orElseThrow(() -> new NotFoundException(MessageException.NOT_FOUND_USER));
 
         user.setStatus(AccountStatus.LOCKED);
         userRepository.save(user);
 
         mailService.sendMail(user.getEmail(),"Account Locked!",
                 "Hi, " + user.getFirstName() + " " + user.getFirstName() + "!\n Tài  khoản của bạn đã bị khóa vì bạn đã vi phạm bất thường.");
+        return UserDtoConverter.toResponse(user);
     }
 
 }

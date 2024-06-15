@@ -6,5 +6,9 @@ public class NotFoundException extends CustomException {
         super(code, message);
     }
 
+    public NotFoundException(String message) {
+        super("404", message);
+    }
+
 
 }

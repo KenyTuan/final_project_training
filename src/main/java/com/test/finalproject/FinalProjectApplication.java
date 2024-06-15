@@ -26,41 +26,4 @@ public class FinalProjectApplication {
 		SpringApplication.run(FinalProjectApplication.class, args);
 	}
 
-	@Bean
-	CommandLineRunner run (UserRepository userRepository , PasswordEncoder
-								   passwordEncoder, TaskRepository taskRepository,
-						   TaskDetailRepository taskDetailRepository
-	)
-	{return args ->
-	{
-		userRepository.save(
-				User.builder()
-						.id(1)
-						.username("tuanvo123")
-						.email("test@test.com")
-						.password(passwordEncoder.encode("12345678"))
-						.firstName("Vo")
-						.lastName("Tuan")
-						.status(AccountStatus.ACTIVE)
-						.build());
-
-		taskRepository.save(
-				Task.builder()
-						.id(1)
-						.user(User.builder().id(1).build())
-						.name("Feature Manager User")
-						.status(ProgressStatus.TODO)
-						.build()
-		);
-
-		taskDetailRepository.save(
-				TaskDetail.builder()
-						.id(1)
-						.name("Feature Login")
-						.task(Task.builder().id(1).build())
-						.build()
-		);
-	};
-	}
-
 }

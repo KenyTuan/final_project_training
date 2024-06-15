@@ -1,7 +1,9 @@
 package com.test.finalproject.service.impl;
 
+import com.test.finalproject.constants.MessageException;
 import com.test.finalproject.entity.Task;
 import com.test.finalproject.entity.TaskDetail;
+import com.test.finalproject.enums.ProgressStatus;
 import com.test.finalproject.exception.NotFoundException;
 import com.test.finalproject.model.converter.TaskDetailDtoConverter;
 import com.test.finalproject.model.dtos.taskDetail.TaskDetailReq;
@@ -24,7 +26,7 @@ public class TaskDetailServiceImpl implements TaskDetailService {
     @Transactional
     public TaskDetailRes addTaskDetail(TaskDetailReq req) {
         final Task task = taskRepository.findById(req.getTaskId())
-                .orElseThrow(() -> new NotFoundException("404", "Task not found"));
+                .orElseThrow(() -> new NotFoundException(MessageException.NOT_FOUND_TASK));
 
         final TaskDetail entity = TaskDetailDtoConverter.toEntity(req);
 
@@ -38,10 +40,10 @@ public class TaskDetailServiceImpl implements TaskDetailService {
     @Transactional
     public TaskDetailRes updateTaskDetail(TaskDetailReq req, int id) {
         final TaskDetail entity = repo.findById(id)
-                .orElseThrow(() -> new NotFoundException("404", "Task Detail not found"));
+                .orElseThrow(() -> new NotFoundException(MessageException.NOT_FOUND_TASK_DETAIL));
 
         final Task task = taskRepository.findById(req.getTaskId())
-                .orElseThrow(() -> new NotFoundException("404", "Task not found"));
+                .orElseThrow(() -> new NotFoundException(MessageException.NOT_FOUND_TASK));
 
         entity.setName(req.getName());
         entity.setTask(task);
@@ -54,7 +56,11 @@ public class TaskDetailServiceImpl implements TaskDetailService {
     @Transactional
     public void deleteTaskDetail(int id) {
         final TaskDetail taskDetail = repo.findById(id)
-                        .orElseThrow(() -> new NotFoundException("404", "Task Detail not found"));
+                        .orElseThrow(() -> new NotFoundException(MessageException.NOT_FOUND_TASK_DETAIL));
+
+        if (taskDetail.getTask().getStatus().equals(ProgressStatus.COMPLETE)) {
+            throw new NotFoundException(MessageException.TASK_IS_COMPLETED);
+        }
         repo.delete(taskDetail);
     }
 }

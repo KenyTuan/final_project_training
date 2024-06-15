@@ -1,6 +1,7 @@
 package com.test.finalproject.service.impl;
 
 import com.test.finalproject.config.JwtUtil;
+import com.test.finalproject.constants.MessageException;
 import com.test.finalproject.entity.User;
 import com.test.finalproject.entity.VerifyEmail;
 import com.test.finalproject.enums.AccountStatus;
@@ -41,14 +42,14 @@ public class AuthServiceImpl implements AuthService {
     public AuthRes login(AuthReq req) {
 
         final User user = userRepository.findByUsername(req.getUsername())
-                .orElseThrow(() -> new NotFoundException("404", "User Not Found"));
+                .orElseThrow(() -> new NotFoundException(MessageException.NOT_FOUND_USER));
 
         if (!passwordEncoder.matches(req.getPassword(), user.getPassword())) {
-            throw new NotFoundException("404", "Wrong Password");
+            throw new BadRequestException(MessageException.NOT_MATCH_PASSWORD);
         }
 
         if (!user.getStatus().equals(AccountStatus.ACTIVE)) {
-            throw new NotFoundException("404", "Account is locked");
+            throw new BadRequestException(MessageException.ACCOUNT_LOCKED);
         }
 
         authenticationManager
@@ -63,7 +64,7 @@ public class AuthServiceImpl implements AuthService {
         final boolean existEmail = userRepository.existsByUsernameAndEmail(req.getUsername(), req.getEmail());
 
         if (existEmail) {
-            throw new NotFoundException("404","Email Already Exist");
+            throw new NotFoundException(MessageException.ALREADY_EXIST_USERNAME_OR_EMAIL);
         }
 
         final User user = UserDtoConverter.toEntity(req);
@@ -80,16 +81,17 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
+    @Transactional
     public void changePassword(ChangePasswordReq req, String token) {
 
         String username = jwtUtil.extractUsername(token.substring(7));
 
         final User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new NotFoundException("404", "User Not Found"));
+                .orElseThrow(() -> new NotFoundException(MessageException.NOT_FOUND_USER));
 
 
         if(!passwordEncoder.matches(req.getOldPassword(), user.getPassword())){
-            throw new BadRequestException("400","Not Match Old Password");
+            throw new BadRequestException(MessageException.NOT_MATCH_PASSWORD);
         }
 
         user.setPassword(passwordEncoder.encode(req.getNewPassword()));
@@ -101,9 +103,9 @@ public class AuthServiceImpl implements AuthService {
     public void createVerification(String email) {
 
         final User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new NotFoundException("404", "User Not Found"));
-        String token = UUID.randomUUID().toString();
-        VerifyEmail verifyEmail = VerifyEmail.builder()
+                .orElseThrow(() -> new NotFoundException(MessageException.NOT_FOUND_USER));
+        final String token = UUID.randomUUID().toString();
+        final VerifyEmail verifyEmail = VerifyEmail.builder()
                 .token(token)
                 .expiryDate(new Timestamp(System.currentTimeMillis() + EXPIRATION))
                 .user(user).build();
@@ -118,20 +120,21 @@ public class AuthServiceImpl implements AuthService {
     public void confirmVerification(String token, String email) {
 
         final VerifyEmail verifyEmail = verifyEmailRepository.findByUserEmailAndToken(email,token)
-                .orElseThrow(() -> new NotFoundException("404", "Token Verify Not Found"));
+                .orElseThrow(() -> new NotFoundException(MessageException.NOT_FOUND_TOKEN_VERIFY));
 
         if(verifyEmail.isTokenExpired()){
-            throw new BadRequestException("400","Token Expired");
+            throw new BadRequestException(MessageException.TOKEN_EXPIRED);
         }
     }
 
     @Override
+    @Transactional
     public void forgotPassword(ForgotPasswordReq req) {
         final User user = userRepository.findByEmail(req.getEmail())
-                .orElseThrow(() -> new NotFoundException("404","User not found"));
+                .orElseThrow(() -> new NotFoundException(MessageException.NOT_FOUND_USER));
 
         if(!passwordEncoder.matches(req.getOldPassword(), user.getPassword())){
-            throw new BadRequestException("400","Not Match Old Password");
+            throw new BadRequestException(MessageException.NOT_MATCH_PASSWORD);
         }
 
         user.setPassword(passwordEncoder.encode(req.getNewPassword()));

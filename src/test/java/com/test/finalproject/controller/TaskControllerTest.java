@@ -3,6 +3,10 @@ package com.test.finalproject.controller;
 
 import com.test.finalproject.AbstractTest;
 import com.test.finalproject.constants.ApiEndpoints;
+import com.test.finalproject.constants.MessageException;
+import com.test.finalproject.entity.Task;
+import com.test.finalproject.entity.User;
+import com.test.finalproject.enums.AccountStatus;
 import com.test.finalproject.enums.ProgressStatus;
 import com.test.finalproject.exception.BadRequestException;
 import com.test.finalproject.exception.NotFoundException;
@@ -11,8 +15,9 @@ import com.test.finalproject.model.dtos.task.TaskRes;
 import com.test.finalproject.service.TaskService;
 import org.junit.Before;
 import org.junit.Test;
-import org.mockito.Mock;
+import org.mockito.InjectMocks;
 import org.mockito.Mockito;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
@@ -32,16 +37,37 @@ public class TaskControllerTest extends AbstractTest {
 
     private static final String END_POINT = ApiEndpoints.PREFIX + ApiEndpoints.TASK_V1;
 
-    @Mock
+    @MockBean
     private TaskService taskService;
 
     private TaskRes res;
     private TaskReq taskReq;
+    private Task task;
+
+    @InjectMocks
+    private TaskController taskController;
 
     @Override
     @Before
     public void setUp() {
         super.setUp();
+        User user = User.builder()
+                .id(1)
+                .username("tuanvo123")
+                .email("test@test.com")
+                .password("$2a$10$z7G...")
+                .firstName("Vo")
+                .lastName("Tuan")
+                .status(AccountStatus.ACTIVE)
+                .build();
+
+        task = Task.builder()
+                .id(1)
+                .user(user)
+                .status(ProgressStatus.TODO)
+                .completeDate(null)
+                .name("Feature Manager User")
+                .build();
 
         res = new TaskRes(
                 1,
@@ -88,7 +114,7 @@ public class TaskControllerTest extends AbstractTest {
     @Test
     public void success_GetAllTasks() throws Exception {
 
-        when(taskService.getTasks());
+        when(taskService.getTasks()).thenReturn(Collections.singletonList(res));
 
         String inputJson = super.mapToJson(taskReq);
         mvc.perform(MockMvcRequestBuilders.get(END_POINT)
@@ -141,7 +167,7 @@ public class TaskControllerTest extends AbstractTest {
     @Test
     public void handleException_InvalidName_RequestTask() throws Exception {
         taskReq.setName(" ");
-        doThrow(new BadRequestException("400","Name is required"))
+        doThrow(new BadRequestException(MessageException.REQUIRED_NAME))
                 .when(taskService).addTask(Mockito.any(TaskReq.class));
 
         String inputJson = super.mapToJson(taskReq);
@@ -151,13 +177,13 @@ public class TaskControllerTest extends AbstractTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(result -> assertInstanceOf(MethodArgumentNotValidException.class, result.getResolvedException()))
                 .andExpect(MockMvcResultMatchers.jsonPath("$.code").value("400"))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.message").value("Name is required"));
+                .andExpect(MockMvcResultMatchers.jsonPath("$.message").value(MessageException.REQUIRED_NAME));
     }
 
     @Test
     public void handleException_InvalidUserId_RequestTask() throws Exception {
         taskReq.setUserId(null);
-        doThrow(new BadRequestException("400","User id is required"))
+        doThrow(new BadRequestException(MessageException.REQUIRED_USER_ID))
                 .when(taskService).addTask(Mockito.any(TaskReq.class));
 
         String inputJson = super.mapToJson(taskReq);
@@ -167,14 +193,14 @@ public class TaskControllerTest extends AbstractTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(result -> assertInstanceOf(MethodArgumentNotValidException.class, result.getResolvedException()))
                 .andExpect(MockMvcResultMatchers.jsonPath("$.code").value("400"))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.message").value("User id is required"));
+                .andExpect(MockMvcResultMatchers.jsonPath("$.message").value(MessageException.REQUIRED_USER_ID));
     }
 
     //===================Handle_Exception_NotFound=================
     @Test
     public void handleException_NotFoundUser_RequestAddTask() throws Exception {
         taskReq.setUserId(0);
-        doThrow(new NotFoundException("404","User not found"))
+        doThrow(new NotFoundException(MessageException.NOT_FOUND_USER))
                 .when(taskService).addTask(Mockito.any(TaskReq.class));
 
         String inputJson = super.mapToJson(taskReq);
@@ -184,13 +210,13 @@ public class TaskControllerTest extends AbstractTest {
                 .andExpect(status().isNotFound())
                 .andExpect(result -> assertInstanceOf(NotFoundException.class, result.getResolvedException()))
                 .andExpect(MockMvcResultMatchers.jsonPath("$.code").value("404"))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.message").value("User not found"));
+                .andExpect(MockMvcResultMatchers.jsonPath("$.message").value(MessageException.NOT_FOUND_USER));
     }
 
     @Test
     public void handleException_NotFoundUser_RequestUpdateTask() throws Exception {
         taskReq.setUserId(0);
-        doThrow(new NotFoundException("404","User not found"))
+        doThrow(new NotFoundException(MessageException.NOT_FOUND_USER))
                 .when(taskService).updateTask(Mockito.any(TaskReq.class),anyInt());
 
         String inputJson = super.mapToJson(taskReq);
@@ -200,13 +226,13 @@ public class TaskControllerTest extends AbstractTest {
                 .andExpect(status().isNotFound())
                 .andExpect(result -> assertInstanceOf(NotFoundException.class, result.getResolvedException()))
                 .andExpect(MockMvcResultMatchers.jsonPath("$.code").value("404"))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.message").value("User not found"));
+                .andExpect(MockMvcResultMatchers.jsonPath("$.message").value(MessageException.NOT_FOUND_USER));
     }
 
     @Test
     public void handleException_NotFoundTask_RequestUpdateTask() throws Exception {
         taskReq.setUserId(1);
-        doThrow(new NotFoundException("404","Task not found"))
+        doThrow(new NotFoundException(MessageException.NOT_FOUND_TASK))
                 .when(taskService).updateTask(Mockito.any(TaskReq.class),anyInt());
 
         String inputJson = super.mapToJson(taskReq);
@@ -216,12 +242,12 @@ public class TaskControllerTest extends AbstractTest {
                 .andExpect(status().isNotFound())
                 .andExpect(result -> assertInstanceOf(NotFoundException.class, result.getResolvedException()))
                 .andExpect(MockMvcResultMatchers.jsonPath("$.code").value("404"))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.message").value("Task not found"));
+                .andExpect(MockMvcResultMatchers.jsonPath("$.message").value(MessageException.NOT_FOUND_TASK));
     }
 
     @Test
     public void handleException_NotFoundTask_RequestDeleteTask() throws Exception {
-        doThrow(new NotFoundException("404","Task not found"))
+        doThrow(new NotFoundException(MessageException.NOT_FOUND_TASK))
                 .when(taskService).deleteTask(anyInt());
 
         String inputJson = super.mapToJson(taskReq);
@@ -231,12 +257,12 @@ public class TaskControllerTest extends AbstractTest {
                 .andExpect(status().isNotFound())
                 .andExpect(result -> assertInstanceOf(NotFoundException.class, result.getResolvedException()))
                 .andExpect(MockMvcResultMatchers.jsonPath("$.code").value("404"))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.message").value("Task not found"));
+                .andExpect(MockMvcResultMatchers.jsonPath("$.message").value(MessageException.NOT_FOUND_TASK));
     }
 
     @Test
     public void handleException_NotFoundTask_RequestGetTaskById() throws Exception {
-        doThrow(new NotFoundException("404","Task not found"))
+        doThrow(new NotFoundException(MessageException.NOT_FOUND_TASK))
                 .when(taskService).getTask(anyInt());
 
         String inputJson = super.mapToJson(taskReq);
@@ -246,12 +272,12 @@ public class TaskControllerTest extends AbstractTest {
                 .andExpect(status().isNotFound())
                 .andExpect(result -> assertInstanceOf(NotFoundException.class, result.getResolvedException()))
                 .andExpect(MockMvcResultMatchers.jsonPath("$.code").value("404"))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.message").value("Task not found"));
+                .andExpect(MockMvcResultMatchers.jsonPath("$.message").value(MessageException.NOT_FOUND_TASK));
     }
 
     @Test
     public void handleException_NotFoundTask_RequestUpdateCompleteTask() throws Exception {
-        doThrow(new NotFoundException("404","Task not found"))
+        doThrow(new NotFoundException(MessageException.NOT_FOUND_TASK))
                 .when(taskService).updateTaskCompleted(anyInt());
 
         String inputJson = super.mapToJson(taskReq);
@@ -261,6 +287,38 @@ public class TaskControllerTest extends AbstractTest {
                 .andExpect(status().isNotFound())
                 .andExpect(result -> assertInstanceOf(NotFoundException.class, result.getResolvedException()))
                 .andExpect(MockMvcResultMatchers.jsonPath("$.code").value("404"))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.message").value("Task not found"));
+                .andExpect(MockMvcResultMatchers.jsonPath("$.message").value(MessageException.NOT_FOUND_TASK));
+    }
+
+    @Test
+    public void handleException_WhenTaskComplete_RequestUpdateCompleteTask() throws Exception {
+        task.setStatus(ProgressStatus.COMPLETE);
+        doThrow(new BadRequestException(MessageException.TASK_IS_COMPLETED))
+                .when(taskService).updateTaskCompleted(anyInt());
+
+        String inputJson = super.mapToJson(taskReq);
+        mvc.perform(MockMvcRequestBuilders.patch(END_POINT + "/1/complete")
+                        .contentType(MediaType.APPLICATION_JSON_VALUE)
+                        .content(inputJson))
+                .andExpect(status().isBadRequest())
+                .andExpect(result -> assertInstanceOf(BadRequestException.class, result.getResolvedException()))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.code").value("400"))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.message").value(MessageException.TASK_IS_COMPLETED));
+    }
+
+    @Test
+    public void handleException_WhenTaskComplete_RequestDeleteTask() throws Exception {
+        task.setStatus(ProgressStatus.COMPLETE);
+        doThrow(new BadRequestException(MessageException.TASK_IS_COMPLETED))
+                .when(taskService).deleteTask(anyInt());
+
+        String inputJson = super.mapToJson(taskReq);
+        mvc.perform(MockMvcRequestBuilders.delete(END_POINT + "/1")
+                        .contentType(MediaType.APPLICATION_JSON_VALUE)
+                        .content(inputJson))
+                .andExpect(status().isBadRequest())
+                .andExpect(result -> assertInstanceOf(BadRequestException.class, result.getResolvedException()))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.code").value("400"))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.message").value(MessageException.TASK_IS_COMPLETED));
     }
 }
