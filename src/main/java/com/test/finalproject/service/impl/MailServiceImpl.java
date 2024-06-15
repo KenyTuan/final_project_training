@@ -36,7 +36,7 @@ public class MailServiceImpl implements MailService {
             message.setText(body);
             mailSender.send(message);
         }catch (Exception e) {
-            throw new BadRequestException("400","Error while sending mail");
+            throw new BadRequestException("Error while sending mail");
         }
 
     }

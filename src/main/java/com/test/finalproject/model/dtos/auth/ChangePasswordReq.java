@@ -1,5 +1,6 @@
 package com.test.finalproject.model.dtos.auth;
 
+import com.test.finalproject.constants.MessageException;
 import jakarta.validation.constraints.Pattern;
 import lombok.Builder;
 import lombok.Getter;
@@ -9,14 +10,14 @@ import lombok.Setter;
 public class ChangePasswordReq {
 
     @Pattern(
-            message = "Password Invalid",
-            regexp = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\\\d)(?=.*[@$!%*?&])[A-Za-z\\\\d@$!%*?&]{8,}$"
+            message = MessageException.INVALID_PASSWORD_NEW,
+            regexp = "^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[@#$%^&+=])(?=\\S+$).{8,20}$"
     )
     private String newPassword;
 
     @Pattern(
-            message = "Password Invalid",
-            regexp = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\\\d)(?=.*[@$!%*?&])[A-Za-z\\\\d@$!%*?&]{8,}$"
+            message = MessageException.INVALID_PASSWORD_OLD,
+            regexp = "^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[@#$%^&+=])(?=\\S+$).{8,20}$"
     )
     private String oldPassword;
 

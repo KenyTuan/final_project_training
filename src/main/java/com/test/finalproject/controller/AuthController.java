@@ -42,7 +42,7 @@ public class AuthController {
         authService.createVerification(email);
     }
 
-    @PostMapping(ApiEndpoints.ACC_V1 +"/verifyEmail")
+    @GetMapping(ApiEndpoints.ACC_V1 +"/verifyEmail")
     public void verifyEmail(
             @RequestParam(name = "email") String email,
             @RequestParam(name = "token") String token) {

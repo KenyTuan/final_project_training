@@ -9,5 +9,5 @@ public interface UserService {
 
     List<UserRes> getAll();
 
-    void updateUserLock(int id);
+    UserRes updateUserLock(int id);
 }

@@ -1,9 +1,12 @@
 package com.test.finalproject.service;
 
+import com.test.finalproject.constants.MessageException;
 import com.test.finalproject.entity.User;
 import com.test.finalproject.enums.AccountStatus;
 import com.test.finalproject.exception.NotFoundException;
+import com.test.finalproject.model.dtos.user.UserRes;
 import com.test.finalproject.repository.UserRepository;
+import com.test.finalproject.service.impl.MailServiceImpl;
 import com.test.finalproject.service.impl.UserServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -16,10 +19,10 @@ import java.util.ArrayList;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 
 @ExtendWith(MockitoExtension.class)
@@ -27,6 +30,9 @@ public class UserServiceTest {
 
     @Mock
     private UserRepository userRepository;
+
+    @Mock
+    private MailServiceImpl mailService;
 
     @InjectMocks
     private UserServiceImpl userService;
@@ -50,8 +56,14 @@ public class UserServiceTest {
     @Test
     public void testUpdateUserLock_WhenSuccess() {
         when(userRepository.findById(anyInt())).thenReturn(Optional.of(user));
+        when(userRepository.save(any())).thenReturn(user);
 
-        assertThat(userRepository.findById(1)).isNotNull();
+        UserRes userRes = userService.updateUserLock(anyInt());
+
+        verify(userRepository,times(1)).findById(anyInt());
+        verify(userRepository,times(1)).save(any());
+        assertThat(userRepository.findById(anyInt())).isNotNull();
+        assertEquals(userRes.status(),AccountStatus.LOCKED);
     }
 
     @Test
@@ -63,6 +75,7 @@ public class UserServiceTest {
 
         var result = userService.getAll();
 
+        verify(userRepository,times(1)).findAll();
         assertThat(result).isNotNull();
         assertThat(result.size()).isEqualTo(1);
         assertEquals(result.get(0).email(),user.getEmail());
@@ -75,9 +88,13 @@ public class UserServiceTest {
     public void testUpdateUserLock_WhenUserNotFound() {
         when(userRepository.findById(anyInt())).thenReturn(Optional.empty());
 
-        assertThrows(NotFoundException.class, () -> userService.updateUserLock(2));
+        assertThatThrownBy(() -> userService.updateUserLock(anyInt()))
+                .isInstanceOf(NotFoundException.class)
+                .hasMessageContaining(MessageException.NOT_FOUND_USER);
 
-        assertThat(userRepository.findById(2)).isEmpty();
+        verify(userRepository,times(1)).findById(anyInt());
+        verify(userRepository,never()).save(any());
+        assertThat(userRepository.findById(anyInt())).isEmpty();
     }
 
     @Test
@@ -86,6 +103,7 @@ public class UserServiceTest {
 
         var userList = userService.getAll();
 
+        verify(userRepository,times(1)).findAll();
         assertThat(userList).isNotNull();
         assertThat(userList.size()).isEqualTo(0);
     }

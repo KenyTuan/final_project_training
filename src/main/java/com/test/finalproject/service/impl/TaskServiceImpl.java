@@ -1,8 +1,10 @@
 package com.test.finalproject.service.impl;
 
+import com.test.finalproject.constants.MessageException;
 import com.test.finalproject.entity.Task;
 import com.test.finalproject.entity.User;
 import com.test.finalproject.enums.ProgressStatus;
+import com.test.finalproject.exception.BadRequestException;
 import com.test.finalproject.exception.NotFoundException;
 import com.test.finalproject.model.converter.TaskDtoConverter;
 import com.test.finalproject.model.dtos.task.TaskReq;
@@ -33,7 +35,7 @@ public class TaskServiceImpl implements TaskService {
     @Override
     public TaskRes getTask(int id) {
         final Task task = taskRepository.findById(id)
-                .orElseThrow(() -> new NotFoundException("404", "Task not found"));
+                .orElseThrow(() -> new NotFoundException(MessageException.NOT_FOUND_TASK));
         return TaskDtoConverter.toResponse(task);
     }
 
@@ -41,7 +43,7 @@ public class TaskServiceImpl implements TaskService {
     @Transactional
     public TaskRes addTask(TaskReq req) {
         final User user = userRepository.findById(req.getUserId())
-                .orElseThrow(() -> new NotFoundException("404", "User not found"));
+                .orElseThrow(() -> new NotFoundException(MessageException.NOT_FOUND_USER));
 
         final Task task = TaskDtoConverter.toEntity(req);
 
@@ -58,10 +60,10 @@ public class TaskServiceImpl implements TaskService {
     public TaskRes updateTask(TaskReq req, int id) {
 
         final Task task = taskRepository.findById(id)
-                .orElseThrow(() -> new NotFoundException("404", "Task not found"));
+                .orElseThrow(() -> new NotFoundException(MessageException.NOT_FOUND_TASK));
 
         final User user = userRepository.findById(req.getUserId())
-                .orElseThrow(() -> new NotFoundException("404", "User not found"));
+                .orElseThrow(() -> new NotFoundException(MessageException.NOT_FOUND_USER));
 
         task.setName(req.getName());
         task.setUser(user);
@@ -74,10 +76,10 @@ public class TaskServiceImpl implements TaskService {
     @Transactional
     public TaskRes updateTaskCompleted(int id) {
         final Task task = taskRepository.findById(id)
-                .orElseThrow(() -> new NotFoundException("404", "Task not found"));
+                .orElseThrow(() -> new NotFoundException(MessageException.NOT_FOUND_TASK));
 
         if (task.getStatus() != ProgressStatus.TODO) {
-            throw new NotFoundException("404", "Task not completed");
+            throw new BadRequestException(MessageException.TASK_IS_COMPLETED);
         }
 
         task.setStatus(ProgressStatus.COMPLETE);
@@ -91,9 +93,9 @@ public class TaskServiceImpl implements TaskService {
     @Transactional
     public void deleteTask(int id) {
         final Task task = taskRepository.findById(id)
-                        .orElseThrow(() -> new NotFoundException("404", "Task not found"));
+                        .orElseThrow(() -> new NotFoundException(MessageException.NOT_FOUND_TASK));
         if (task.getStatus() != ProgressStatus.TODO) {
-            throw new NotFoundException("404", "Task not completed");
+            throw new BadRequestException(MessageException.TASK_IS_COMPLETED);
         }
         taskRepository.delete(task);
     }

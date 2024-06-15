@@ -15,13 +15,14 @@ public class UserDtoConverter {
                 .toList();
     }
 
-    private static UserRes toResponse(User user) {
+    public static UserRes toResponse(User user) {
         return new UserRes(
                 user.getId(),
                 user.getUsername(),
                 user.getFirstName(),
                 user.getLastName(),
                 user.getEmail(),
+                user.getStatus(),
                 user.getTasks() != null ? TaskDtoConverter.toModelList(user.getTasks()): Collections.emptyList()
         );
     }
