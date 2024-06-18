@@ -18,7 +18,7 @@ public class TaskController {
     private final TaskService taskService;
 
     @GetMapping(ApiEndpoints.TASK_V1)
-    public List<TaskRes> getTaskList(){
+    public List<TaskRes> getAllTasks(){
         return taskService.getTasks();
     }
 

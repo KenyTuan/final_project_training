@@ -16,9 +16,7 @@ public class AuthController {
 
     private final AuthService authService;
 
-
     @PostMapping(ApiEndpoints.ACC_V1 + "/login")
-    @ResponseStatus(HttpStatus.CREATED)
     public AuthRes login(@RequestBody @Valid AuthReq authReq) {
         return authService.login(authReq);
     }
@@ -29,30 +27,17 @@ public class AuthController {
         return authService.register(authReq);
     }
 
-    @PatchMapping(ApiEndpoints.ACC_V1 + "/changePassword")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void forgot(@RequestBody @Valid ChangePasswordReq req,
-                       @RequestHeader(HttpHeaders.AUTHORIZATION) String token) {
-        authService.changePassword(req,token);
-    }
-
-    @PostMapping(ApiEndpoints.ACC_V1 + "/sendVerifyEmail")
+    @PostMapping(ApiEndpoints.ACC_V1 + "/generate-password-rest-token")
     @ResponseStatus(HttpStatus.CREATED)
-    public void createTokenVerify(@RequestParam(name = "email") String email) {
-        authService.createVerification(email);
+    public void createPasswordRestToken(@RequestParam(name = "email") String email) {
+        authService.createPasswordRestToken(email);
     }
 
-    @GetMapping(ApiEndpoints.ACC_V1 +"/verifyEmail")
-    public void verifyEmail(
+    @PatchMapping(ApiEndpoints.ACC_V1 +"/confirm-password-rest-token")
+    public void confirmPasswordRestToken(
             @RequestParam(name = "email") String email,
             @RequestParam(name = "token") String token) {
-        authService.confirmVerification(token,email);
-    }
-
-    @PatchMapping(ApiEndpoints.ACC_V1 + "/forgotPassword")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void forgot(@RequestBody @Valid ForgotPasswordReq req) {
-        authService.forgotPassword(req);
+        authService.confirmPasswordRestToken(token,email);
     }
 
 }

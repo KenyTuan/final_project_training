@@ -3,7 +3,7 @@ package com.test.finalproject.service;
 import com.test.finalproject.config.JwtUtil;
 import com.test.finalproject.constants.MessageException;
 import com.test.finalproject.entity.User;
-import com.test.finalproject.entity.VerifyEmail;
+import com.test.finalproject.entity.PasswordRestToken;
 import com.test.finalproject.enums.AccountStatus;
 import com.test.finalproject.exception.BadRequestException;
 import com.test.finalproject.exception.NotFoundException;
@@ -57,7 +57,7 @@ public class AuthServiceTest {
     private User user;
 
     @InjectMocks
-    private VerifyEmail verifyEmail;
+    private PasswordRestToken passwordRestToken;
 
     @InjectMocks
     String token;
@@ -76,7 +76,7 @@ public class AuthServiceTest {
 
         token = UUID.randomUUID().toString();
 
-        verifyEmail = VerifyEmail.builder()
+        passwordRestToken = PasswordRestToken.builder()
                 .token(UUID.randomUUID().toString())
                 .expiryDate(new Timestamp(System.currentTimeMillis() + 60 * 15 *1000))
                 .user(user)
@@ -158,7 +158,7 @@ public class AuthServiceTest {
                 .lastName("tuan")
                 .build();
 
-        lenient().when(userRepository.existsByUsernameAndEmail(anyString(), anyString())).thenReturn(false);
+        lenient().when(userRepository.existsByUsernameOrEmail(anyString(), anyString())).thenReturn(false);
 
         lenient().when(userRepository.save(any(User.class))).thenReturn(user);
 
@@ -170,7 +170,7 @@ public class AuthServiceTest {
 
         assertEquals(authRes.token(),"Bearer token");
 
-        verify(userRepository,times(1)).existsByUsernameAndEmail(anyString(), anyString());
+        verify(userRepository,times(1)).existsByUsernameOrEmail(anyString(), anyString());
         verify(userRepository,times(1)).save(any(User.class));
         verify(jwtUtil,times(1)).generateToken(any(User.class));
     }
@@ -186,194 +186,76 @@ public class AuthServiceTest {
                 .lastName("tuan")
                 .build();
 
-        when(userRepository.existsByUsernameAndEmail(anyString(), anyString())).thenReturn(true);
+        when(userRepository.existsByUsernameOrEmail(anyString(), anyString())).thenReturn(true);
 
         assertThatThrownBy(() -> authService.register(registerReq))
                 .isInstanceOf(NotFoundException.class)
                 .hasMessageContaining(MessageException.ALREADY_EXIST_USERNAME_OR_EMAIL);
-        verify(userRepository,times(1)).existsByUsernameAndEmail(anyString(), anyString());
-        verify(userRepository,never()).save(any(User.class));
-    }
-
-    //=================Test_Change_Password=================
-    @Test
-    public void testChangePassword_WhenSuccess() {
-        ChangePasswordReq req = ChangePasswordReq.builder()
-                .oldPassword("123@L.quy5401")
-                .newPassword("newPassword123@")
-                .build();
-        String token = "Bearer token";
-
-        when(jwtUtil.extractUsername(token.substring(7))).thenReturn("votuan123");
-        when(userRepository.findByUsername(anyString())).thenReturn(Optional.of(user));
-        when(passwordEncoder.matches(req.getOldPassword(), user.getPassword())).thenReturn(true);
-        when(userRepository.save(any(User.class))).thenReturn(user);
-
-        authService.changePassword(req, token);
-
-        verify(userRepository, times(1)).findByUsername(anyString());
-        verify(passwordEncoder,times(1)).matches(anyString(),anyString());
-        verify(userRepository, times(1)).save(user);
-    }
-
-    @Test
-    public void testChangeForgot_WhenNotMatchPassword() {
-        ChangePasswordReq changePasswordReq = ChangePasswordReq.builder()
-                .oldPassword("123@L.quy5401")
-                .newPassword("newPassword123@")
-                .build();
-
-        String token = "Bearer token";
-
-        when(jwtUtil.extractUsername(token.substring(7))).thenReturn("votuan123");
-        when(userRepository.findByUsername(anyString())).thenReturn(Optional.of(user));
-        lenient().when(passwordEncoder.matches(anyString(), anyString())).thenReturn(false);
-
-        assertThatThrownBy(() -> authService.changePassword(changePasswordReq,token))
-                .isInstanceOf(BadRequestException.class)
-                .hasMessageContaining(MessageException.NOT_MATCH_PASSWORD);
-        verify(jwtUtil,times(1)).extractUsername(anyString());
-        verify(userRepository,times(1)).findByUsername(anyString());
-        verify(passwordEncoder,times(1)).matches(anyString(),anyString());
-        verify(userRepository,never()).save(any(User.class));
-    }
-
-    @Test
-    public void testChangePassword_WhenNotFoundUser() {
-        ChangePasswordReq changePasswordReq = ChangePasswordReq.builder().oldPassword("12345678").newPassword("123456723").build();
-        String token = "Bearer token";
-
-        when(jwtUtil.extractUsername(token.substring(7))).thenReturn("votuan123");
-        when(userRepository.findByUsername(anyString())).thenReturn(Optional.empty());
-
-        assertThatThrownBy(() -> authService.changePassword(changePasswordReq,token))
-                .isInstanceOf(NotFoundException.class)
-                .hasMessageContaining(MessageException.NOT_FOUND_USER);
-        verify(jwtUtil,times(1)).extractUsername(anyString());
-        verify(userRepository,times(1)).findByUsername(anyString());
-        verify(passwordEncoder,never()).matches(anyString(),anyString());
-        verify(userRepository,never()).save(any(User.class));
-    }
-
-    //==================Test_Forgot_Passwrod=================
-    @Test
-    public void testForgotPassword_WhenSuccess() {
-        ForgotPasswordReq forgotPasswordReq = ForgotPasswordReq.builder()
-                .email("votuan123@gmail.com")
-                .oldPassword("123@L.quy5401")
-                .newPassword("newPassword123@")
-                .build();
-
-        when(userRepository.findByEmail(anyString())).thenReturn(Optional.of(user));
-        when(passwordEncoder.matches(anyString(), anyString())).thenReturn(true);
-        when(userRepository.save(any(User.class))).thenReturn(user);
-
-        authService.forgotPassword(forgotPasswordReq);
-
-        assertThat(user.getPassword()).isNotEqualTo("123@L.quy5401");
-        verify(userRepository, times(1)).findByEmail(anyString());
-        verify(passwordEncoder,times(1)).matches(anyString(),anyString());
-        verify(userRepository, times(1)).save(any(User.class));
-    }
-
-    @Test
-    public void testForgotPassword_WhenUserNotFound() {
-        ForgotPasswordReq forgotPasswordReq = ForgotPasswordReq.builder()
-                .email("notfound@gmail.com")
-                .oldPassword("12345678")
-                .newPassword("newPassword")
-                .build();
-
-        when(userRepository.findByEmail(anyString())).thenReturn(Optional.empty());
-
-        assertThatThrownBy(() -> authService.forgotPassword(forgotPasswordReq))
-                .isInstanceOf(NotFoundException.class)
-                .hasMessageContaining(MessageException.NOT_FOUND_USER);
-        verify(userRepository,times(1)).findByEmail(anyString());
-        verify(passwordEncoder,never()).matches(anyString(),anyString());
-        verify(userRepository,never()).save(any(User.class));
-    }
-
-    @Test
-    public void testForgotPassword_WhenOldPasswordNotMatch() {
-        ForgotPasswordReq forgotPasswordReq = ForgotPasswordReq.builder()
-                .email("votuan123@gmail.com")
-                .oldPassword("wrongPassword")
-                .newPassword("newPassword")
-                .build();
-
-        when(userRepository.findByEmail(anyString())).thenReturn(Optional.of(user));
-        when(passwordEncoder.matches(anyString(), anyString())).thenReturn(false);
-
-        assertThatThrownBy(() -> authService.forgotPassword(forgotPasswordReq))
-                .isInstanceOf(BadRequestException.class)
-                .hasMessageContaining(MessageException.NOT_MATCH_PASSWORD);
-        verify(userRepository,times(1)).findByEmail(anyString());
-        verify(passwordEncoder,times(1)).matches(anyString(),anyString());
+        verify(userRepository,times(1)).existsByUsernameOrEmail(anyString(), anyString());
         verify(userRepository,never()).save(any(User.class));
     }
 
     //=================Test_CreateVerify==================
     @Test
-    public void testCreateVerification_WhenSuccess() {
+    public void testCreatePasswordRestToken_WhenSuccess() {
         String email = "votuan123@gmail.com";
 
         when(userRepository.findByEmail(anyString())).thenReturn(Optional.of(user));
-        when(verifyEmailRepository.save(any(VerifyEmail.class))).thenReturn(verifyEmail);
+        when(verifyEmailRepository.save(any(PasswordRestToken.class))).thenReturn(passwordRestToken);
 
-        authService.createVerification(email);
+        authService.createPasswordRestToken(email);
 
         verify(userRepository, times(1)).findByEmail(anyString());
-        verify(verifyEmailRepository, times(1)).save(any(VerifyEmail.class));
+        verify(verifyEmailRepository, times(1)).save(any(PasswordRestToken.class));
     }
 
     @Test
-    public void testCreateVerification_WhenUserNotFound() {
+    public void testCreatePasswordRestToken_WhenUserNotFound() {
         String email = "notfound@gmail.com";
 
         when(userRepository.findByEmail(anyString())).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> authService.createVerification(email))
+        assertThatThrownBy(() -> authService.createPasswordRestToken(email))
                 .isInstanceOf(NotFoundException.class)
                 .hasMessageContaining(MessageException.NOT_FOUND_USER);
         verify(userRepository,times(1)).findByEmail(anyString());
-        verify(verifyEmailRepository,never()).save(any(VerifyEmail.class));
+        verify(verifyEmailRepository,never()).save(any(PasswordRestToken.class));
     }
 
     //===================Test_Confirm_Verification======
     @Test
-    public void testConfirmVerification_WhenSuccess() {
-        String token = verifyEmail.getToken();
-        String email = verifyEmail.getUser().getEmail();
+    public void testConfirmPasswordRestToken_WhenSuccess() {
+        String token = passwordRestToken.getToken();
+        String email = passwordRestToken.getUser().getEmail();
 
-        when(verifyEmailRepository.findByUserEmailAndToken(anyString(), anyString())).thenReturn(Optional.of(verifyEmail));
-        authService.confirmVerification(token, email);
+        when(verifyEmailRepository.findByUserEmailAndToken(anyString(), anyString())).thenReturn(Optional.of(passwordRestToken));
+        authService.confirmPasswordRestToken(token, email);
 
         verify(verifyEmailRepository, times(1)).findByUserEmailAndToken(anyString(), anyString());
     }
 
     @Test
-    public void testConfirmVerification_WhenTokenVerifyNotFound() {
+    public void testConfirmPasswordRestToken_WhenTokenVerifyNotFound() {
         String token = "invalidToken";
         String email = "votuan123@gmail.com";
 
         when(verifyEmailRepository.findByUserEmailAndToken(anyString(), anyString())).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> authService.confirmVerification(token,email))
+        assertThatThrownBy(() -> authService.confirmPasswordRestToken(token,email))
                 .isInstanceOf(NotFoundException.class)
                 .hasMessageContaining(MessageException.NOT_FOUND_TOKEN_VERIFY);
         verify(verifyEmailRepository,times(1)).findByUserEmailAndToken(anyString(), anyString());
     }
 
     @Test
-    public void testConfirmVerification_WhenTokenExpired() {
-        String token = verifyEmail.getToken();
-        String email = verifyEmail.getUser().getEmail();
-        verifyEmail.setExpiryDate(new Timestamp(System.currentTimeMillis() - 15*60*1000));
+    public void testConfirmPasswordRestToken_WhenTokenExpired() {
+        String token = passwordRestToken.getToken();
+        String email = passwordRestToken.getUser().getEmail();
+        passwordRestToken.setExpiryDate(new Timestamp(System.currentTimeMillis() - 15*60*1000));
 
-        when(verifyEmailRepository.findByUserEmailAndToken(anyString(), anyString())).thenReturn(Optional.of(verifyEmail));
+        when(verifyEmailRepository.findByUserEmailAndToken(anyString(), anyString())).thenReturn(Optional.of(passwordRestToken));
 
-        assertThatThrownBy(() -> authService.confirmVerification(token,email))
+        assertThatThrownBy(() -> authService.confirmPasswordRestToken(token,email))
                 .isInstanceOf(BadRequestException.class)
                 .hasMessageContaining(MessageException.TOKEN_EXPIRED);
         verify(verifyEmailRepository,times(1)).findByUserEmailAndToken(anyString(), anyString());

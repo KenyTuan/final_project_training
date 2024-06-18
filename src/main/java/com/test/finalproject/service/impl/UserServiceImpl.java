@@ -23,7 +23,7 @@ public class UserServiceImpl implements UserService {
     private final MailService mailService;
 
     @Override
-    public List<UserRes> getAll() {
+    public List<UserRes> getAllUsers() {
         return UserDtoConverter.toModelList(userRepository.findAll()) ;
     }
 

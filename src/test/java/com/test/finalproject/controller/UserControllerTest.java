@@ -6,25 +6,20 @@ import com.test.finalproject.constants.MessageException;
 import com.test.finalproject.entity.User;
 import com.test.finalproject.enums.AccountStatus;
 import com.test.finalproject.exception.NotFoundException;
-import com.test.finalproject.model.dtos.auth.AuthReq;
 import com.test.finalproject.model.dtos.user.UserRes;
 import com.test.finalproject.service.UserService;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.Mockito;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
-import org.springframework.web.bind.MethodArgumentNotValidException;
 
 import java.util.Collections;
 
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -61,7 +56,7 @@ public class UserControllerTest extends AbstractTest {
 
     @Test
     public void success_GetAllUser() throws Exception {
-        when(userService.getAll()).thenReturn(Collections.singletonList(userRes));
+        when(userService.getAllUsers()).thenReturn(Collections.singletonList(userRes));
 
         mvc.perform(MockMvcRequestBuilders.get(END_POINT)
                         .contentType(MediaType.APPLICATION_JSON_VALUE))

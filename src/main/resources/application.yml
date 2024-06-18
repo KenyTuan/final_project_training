@@ -8,22 +8,18 @@ spring:
     driver-class-name: com.mysql.cj.jdbc.Driver
   jpa:
     hibernate:
-      ddl-auto: create-drop
+      ddl-auto: update
     database-platform: org.hibernate.dialect.MySQLDialect
     show-sql: true
   mail:
-    username: 2154810088@vaa.edu.vn
-    port: 25
-    password: khik siff pedj yebm
+    host: smtp.gmail.com
+    port: 587
     properties:
       mail:
         smtp:
+          auth: true
           starttls:
-            required: true
-            auth: true
-            protocol: smtp
-            starttls:
-              enable: true
+            enable: true
 
 
 application:

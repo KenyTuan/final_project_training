@@ -18,7 +18,7 @@ public class UserController {
 
     @GetMapping(ApiEndpoints.USER_V1)
     public List<UserRes> getAllUsers() {
-        return userService.getAll();
+        return userService.getAllUsers();
     }
 
     @PatchMapping(ApiEndpoints.USER_V1 + "/{id}/locked")

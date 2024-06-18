@@ -67,13 +67,13 @@ public class UserServiceTest {
     }
 
     @Test
-    public void testGetAllUsers_ReturnsUserList() {
+    public void testGetAllUsersUsers_ReturnsUserList() {
         var userList = new ArrayList<User>();
         userList.add(user);
 
         when(userRepository.findAll()).thenReturn(userList);
 
-        var result = userService.getAll();
+        var result = userService.getAllUsers();
 
         verify(userRepository,times(1)).findAll();
         assertThat(result).isNotNull();
@@ -98,10 +98,10 @@ public class UserServiceTest {
     }
 
     @Test
-    public void testGetAllUsers_ReturnsEmptyList() {
+    public void testGetAllUsersUsers_ReturnsEmptyList() {
         when(userRepository.findAll()).thenReturn(new ArrayList<>());
 
-        var userList = userService.getAll();
+        var userList = userService.getAllUsers();
 
         verify(userRepository,times(1)).findAll();
         assertThat(userList).isNotNull();

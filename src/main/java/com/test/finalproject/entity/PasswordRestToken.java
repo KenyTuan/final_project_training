@@ -3,7 +3,6 @@ package com.test.finalproject.entity;
 import jakarta.persistence.*;
 import lombok.*;
 
-import java.sql.Date;
 import java.sql.Timestamp;
 
 @Entity
@@ -11,7 +10,7 @@ import java.sql.Timestamp;
 @NoArgsConstructor
 @AllArgsConstructor
 @Setter @Getter @Builder
-public class VerifyEmail {
+public class PasswordRestToken {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

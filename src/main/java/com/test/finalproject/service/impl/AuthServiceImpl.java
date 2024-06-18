@@ -3,7 +3,7 @@ package com.test.finalproject.service.impl;
 import com.test.finalproject.config.JwtUtil;
 import com.test.finalproject.constants.MessageException;
 import com.test.finalproject.entity.User;
-import com.test.finalproject.entity.VerifyEmail;
+import com.test.finalproject.entity.PasswordRestToken;
 import com.test.finalproject.enums.AccountStatus;
 import com.test.finalproject.exception.BadRequestException;
 import com.test.finalproject.exception.NotFoundException;
@@ -14,14 +14,23 @@ import com.test.finalproject.repository.VerifyEmailRepository;
 import com.test.finalproject.service.AuthService;
 import com.test.finalproject.service.MailService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.mail.SimpleMailMessage;
+import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.security.SecureRandom;
 import java.sql.Timestamp;
+import java.util.Collections;
+import java.util.List;
+import java.util.Random;
 import java.util.UUID;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 @Service
 @RequiredArgsConstructor
@@ -37,6 +46,7 @@ public class AuthServiceImpl implements AuthService {
     private final AuthenticationManager authenticationManager;
     private final VerifyEmailRepository verifyEmailRepository;
     private final MailService mailService;
+    private final JavaMailSender mailSender;
 
     @Override
     public AuthRes login(AuthReq req) {
@@ -61,7 +71,7 @@ public class AuthServiceImpl implements AuthService {
     @Override
     @Transactional
     public AuthRes register(RegisterReq req) {
-        final boolean existEmail = userRepository.existsByUsernameAndEmail(req.getUsername(), req.getEmail());
+        final boolean existEmail = userRepository.existsByUsernameOrEmail(req.getUsername(), req.getEmail());
 
         if (existEmail) {
             throw new NotFoundException(MessageException.ALREADY_EXIST_USERNAME_OR_EMAIL);
@@ -82,63 +92,79 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     @Transactional
-    public void changePassword(ChangePasswordReq req, String token) {
-
-        String username = jwtUtil.extractUsername(token.substring(7));
-
-        final User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new NotFoundException(MessageException.NOT_FOUND_USER));
-
-
-        if(!passwordEncoder.matches(req.getOldPassword(), user.getPassword())){
-            throw new BadRequestException(MessageException.NOT_MATCH_PASSWORD);
-        }
-
-        user.setPassword(passwordEncoder.encode(req.getNewPassword()));
-        userRepository.save(user);
-    }
-
-    @Override
-    @Transactional
-    public void createVerification(String email) {
+    public void createPasswordRestToken(String email) {
 
         final User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new NotFoundException(MessageException.NOT_FOUND_USER));
         final String token = UUID.randomUUID().toString();
-        final VerifyEmail verifyEmail = VerifyEmail.builder()
+        final PasswordRestToken passwordRestToken = PasswordRestToken.builder()
                 .token(token)
                 .expiryDate(new Timestamp(System.currentTimeMillis() + EXPIRATION))
                 .user(user).build();
 
-        verifyEmailRepository.save(verifyEmail);
+        verifyEmailRepository.save(passwordRestToken);
 
         mailService.sendMail(user.getEmail(),"Verify Change Password!",
                 "Chào, " + user.getFirstName() + " " + user.getLastName() + "!\n Đây là mã xác thực: " + token);
     }
 
     @Override
-    public void confirmVerification(String token, String email) {
+    @Transactional
+    public void confirmPasswordRestToken(String token, String email) {
 
-        final VerifyEmail verifyEmail = verifyEmailRepository.findByUserEmailAndToken(email,token)
+        final PasswordRestToken passwordRestToken = verifyEmailRepository.findByUserEmailAndToken(email,token)
                 .orElseThrow(() -> new NotFoundException(MessageException.NOT_FOUND_TOKEN_VERIFY));
 
-        if(verifyEmail.isTokenExpired()){
+        if(passwordRestToken.isTokenExpired()){
             throw new BadRequestException(MessageException.TOKEN_EXPIRED);
         }
-    }
 
-    @Override
-    @Transactional
-    public void forgotPassword(ForgotPasswordReq req) {
-        final User user = userRepository.findByEmail(req.getEmail())
-                .orElseThrow(() -> new NotFoundException(MessageException.NOT_FOUND_USER));
+        verifyEmailRepository.delete(passwordRestToken);
 
-        if(!passwordEncoder.matches(req.getOldPassword(), user.getPassword())){
-            throw new BadRequestException(MessageException.NOT_MATCH_PASSWORD);
-        }
+        final User user = passwordRestToken.getUser();
 
-        user.setPassword(passwordEncoder.encode(req.getNewPassword()));
+        String password = generateSecureRandomPassword();
+
+        user.setPassword(passwordEncoder.encode(password));
+
         userRepository.save(user);
+
+        mailService.sendMail(user.getEmail(),"Your Password Rest!",
+                "Chào, " + user.getFirstName() + " " + user.getLastName() + "!\n Your password : " + password);
     }
+
+    public String generateSecureRandomPassword() {
+        Stream<Character> pwdStream = Stream.concat(getRandomNumbers(2),
+                Stream.concat(getRandomSpecialChars(2),
+                        Stream.concat(getRandomAlphabets(2, true), getRandomAlphabets(4, false))));
+        List<Character> charList = pwdStream.collect(Collectors.toList());
+        Collections.shuffle(charList);
+        return charList.stream()
+                .collect(StringBuilder::new, StringBuilder::append, StringBuilder::append)
+                .toString();
+    }
+
+    private Stream<Character> getRandomSpecialChars(int count) {
+        Random random = new SecureRandom();
+        IntStream specialChars = random.ints(count, 33, 45);
+        return specialChars.mapToObj(data -> (char) data);
+    }
+
+    private Stream<Character> getRandomNumbers(int count) {
+        Random random = new SecureRandom();
+        IntStream specialChars = random.ints(count, 48, 57);
+        return specialChars.mapToObj(data -> (char) data);
+    }
+
+    private Stream<Character> getRandomAlphabets(int count, boolean checkToUpper) {
+        Random random = new SecureRandom();
+
+        int characterFrom = checkToUpper ? 41 : 61;
+        int characterTo = checkToUpper ? 90 : 122;
+
+        IntStream specialChars = random.ints(count, characterFrom, characterTo);
+        return specialChars.mapToObj(data -> (char) data);
+    }
+
 
 }

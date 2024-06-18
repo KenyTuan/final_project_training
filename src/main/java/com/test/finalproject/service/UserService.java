@@ -7,7 +7,7 @@ import java.util.List;
 
 public interface UserService {
 
-    List<UserRes> getAll();
+    List<UserRes> getAllUsers();
 
     UserRes updateUserLock(int id);
 }

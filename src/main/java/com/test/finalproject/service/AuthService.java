@@ -8,11 +8,7 @@ public interface AuthService {
 
     AuthRes register(RegisterReq req);
 
-    void changePassword(ChangePasswordReq req, String token);
+    void createPasswordRestToken(String email);
 
-    void createVerification(String email);
-
-    void confirmVerification(String token,String email);
-
-    void forgotPassword(ForgotPasswordReq req);
+    void confirmPasswordRestToken(String token, String email);
 }
