@@ -13,7 +13,9 @@ spring:
     show-sql: true
   mail:
     host: smtp.gmail.com
+    username: ${MAIL_USERNAME}
     port: 587
+    password: ${MAIL_PASSWORD}
     properties:
       mail:
         smtp:
@@ -29,6 +31,8 @@ application:
       expiration: 86400000
       refresh-token:
         expiration: 604800000
+  mail:
+    expiration: 900000
 
 server:
   port: 8080

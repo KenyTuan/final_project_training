@@ -3,13 +3,11 @@ package com.test.finalproject.service;
 import com.test.finalproject.config.JwtUtil;
 import com.test.finalproject.constants.MessageException;
 import com.test.finalproject.entity.User;
-import com.test.finalproject.entity.PasswordRestToken;
 import com.test.finalproject.enums.AccountStatus;
 import com.test.finalproject.exception.BadRequestException;
 import com.test.finalproject.exception.NotFoundException;
 import com.test.finalproject.model.dtos.auth.*;
 import com.test.finalproject.repository.UserRepository;
-import com.test.finalproject.repository.VerifyEmailRepository;
 import com.test.finalproject.service.impl.AuthServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -17,6 +15,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
@@ -34,9 +33,6 @@ public class AuthServiceTest {
 
     @Mock
     private UserRepository userRepository;
-
-    @Mock
-    private VerifyEmailRepository verifyEmailRepository;
 
     @Mock
     private JwtUtil jwtUtil;
@@ -57,30 +53,25 @@ public class AuthServiceTest {
     private User user;
 
     @InjectMocks
-    private PasswordRestToken passwordRestToken;
-
-    @InjectMocks
     String token;
 
     @BeforeEach
     public void setUp() {
+        token = UUID.randomUUID().toString();
+
         user = User.builder()
                 .id(1)
                 .username("votuan123")
                 .email("votuan123@gmail.com")
                 .password("$2a$10$z7G...")
                 .status(AccountStatus.ACTIVE)
+                .expiryDate(new Timestamp(System.currentTimeMillis() + 90000))
+                .token(token)
                 .firstName("vo")
                 .lastName("tuan")
                 .build();
 
-        token = UUID.randomUUID().toString();
 
-        passwordRestToken = PasswordRestToken.builder()
-                .token(UUID.randomUUID().toString())
-                .expiryDate(new Timestamp(System.currentTimeMillis() + 60 * 15 *1000))
-                .user(user)
-                .build();
     }
 
     //==================Test_Login=============================
@@ -201,12 +192,12 @@ public class AuthServiceTest {
         String email = "votuan123@gmail.com";
 
         when(userRepository.findByEmail(anyString())).thenReturn(Optional.of(user));
-        when(verifyEmailRepository.save(any(PasswordRestToken.class))).thenReturn(passwordRestToken);
+        when(userRepository.save(any(User.class))).thenReturn(user);
 
         authService.createPasswordRestToken(email);
 
         verify(userRepository, times(1)).findByEmail(anyString());
-        verify(verifyEmailRepository, times(1)).save(any(PasswordRestToken.class));
+        verify(userRepository, times(1)).save(any(User.class));
     }
 
     @Test
@@ -219,45 +210,46 @@ public class AuthServiceTest {
                 .isInstanceOf(NotFoundException.class)
                 .hasMessageContaining(MessageException.NOT_FOUND_USER);
         verify(userRepository,times(1)).findByEmail(anyString());
-        verify(verifyEmailRepository,never()).save(any(PasswordRestToken.class));
+        verify(userRepository,never()).save(any(User.class));
     }
 
     //===================Test_Confirm_Verification======
     @Test
     public void testConfirmPasswordRestToken_WhenSuccess() {
-        String token = passwordRestToken.getToken();
-        String email = passwordRestToken.getUser().getEmail();
+        String email = "votuan123@gmail.com";
 
-        when(verifyEmailRepository.findByUserEmailAndToken(anyString(), anyString())).thenReturn(Optional.of(passwordRestToken));
+        when(userRepository.findByEmailAndToken(anyString(), anyString())).thenReturn(Optional.of(user));
+        when(userRepository.save(any(User.class))).thenReturn(user);
+
         authService.confirmPasswordRestToken(token, email);
 
-        verify(verifyEmailRepository, times(1)).findByUserEmailAndToken(anyString(), anyString());
+        verify(userRepository, times(1)).findByEmailAndToken(anyString(), anyString());
+        verify(userRepository,times(1)).save(any(User.class));
     }
 
     @Test
     public void testConfirmPasswordRestToken_WhenTokenVerifyNotFound() {
-        String token = "invalidToken";
         String email = "votuan123@gmail.com";
 
-        when(verifyEmailRepository.findByUserEmailAndToken(anyString(), anyString())).thenReturn(Optional.empty());
+        when(userRepository.findByEmailAndToken(anyString(), anyString())).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> authService.confirmPasswordRestToken(token,email))
                 .isInstanceOf(NotFoundException.class)
                 .hasMessageContaining(MessageException.NOT_FOUND_TOKEN_VERIFY);
-        verify(verifyEmailRepository,times(1)).findByUserEmailAndToken(anyString(), anyString());
     }
 
     @Test
     public void testConfirmPasswordRestToken_WhenTokenExpired() {
-        String token = passwordRestToken.getToken();
-        String email = passwordRestToken.getUser().getEmail();
-        passwordRestToken.setExpiryDate(new Timestamp(System.currentTimeMillis() - 15*60*1000));
+        String token = user.getToken();
+        String email = user.getEmail();
+        user.setExpiryDate(new Timestamp(System.currentTimeMillis() - 15*60*1000));
 
-        when(verifyEmailRepository.findByUserEmailAndToken(anyString(), anyString())).thenReturn(Optional.of(passwordRestToken));
+        when(userRepository.findByEmailAndToken(anyString(), anyString())).thenReturn(Optional.of(user));
 
         assertThatThrownBy(() -> authService.confirmPasswordRestToken(token,email))
                 .isInstanceOf(BadRequestException.class)
                 .hasMessageContaining(MessageException.TOKEN_EXPIRED);
-        verify(verifyEmailRepository,times(1)).findByUserEmailAndToken(anyString(), anyString());
+        verify(userRepository,times(1)).findByEmailAndToken(anyString(), anyString());
+        verify(userRepository,never()).save(any(User.class));
     }
 }

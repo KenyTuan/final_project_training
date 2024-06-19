@@ -40,37 +40,11 @@ public class TaskDetailControllerTest extends AbstractTest {
     private TaskDetailController taskDetailController;
     private TaskDetailReq taskDetailReq;
     private TaskDetailRes res;
-    private Task task;
-    private TaskDetail taskDetail;
 
     @Override
     @Before
     public void setUp() {
         super.setUp();
-
-        User user = User.builder()
-                .id(1)
-                .username("tuanvo123")
-                .email("test@test.com")
-                .password("$2a$10$z7G...")
-                .firstName("Vo")
-                .lastName("Tuan")
-                .status(AccountStatus.ACTIVE)
-                .build();
-
-        task = Task.builder()
-                .id(1)
-                .user(user)
-                .status(ProgressStatus.TODO)
-                .completeDate(null)
-                .name("Feature Manager User")
-                .build();
-
-        taskDetail = TaskDetail.builder()
-                .id(1)
-                .task(task)
-                .name("Register User")
-                .build();
 
         taskDetailReq = TaskDetailReq.builder()
                 .taskId(1)

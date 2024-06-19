@@ -7,6 +7,7 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
 import java.io.Serializable;
+import java.sql.Timestamp;
 import java.util.Collection;
 import java.util.List;
 
@@ -16,6 +17,7 @@ import java.util.List;
 @AllArgsConstructor
 @Getter @Setter
 @Builder
+@EqualsAndHashCode
 public class User extends BaseEntity implements Serializable, UserDetails {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -32,6 +34,10 @@ public class User extends BaseEntity implements Serializable, UserDetails {
 
     @Column(unique = true, nullable = false)
     private String email;
+
+    private String token;
+
+    private Timestamp expiryDate;
 
     private AccountStatus status;
 
@@ -61,5 +67,9 @@ public class User extends BaseEntity implements Serializable, UserDetails {
     @Override
     public boolean isEnabled() {
         return true;
+    }
+
+    public boolean isTokenExpired() {
+        return new Timestamp(System.currentTimeMillis()).after(this.expiryDate);
     }
 }

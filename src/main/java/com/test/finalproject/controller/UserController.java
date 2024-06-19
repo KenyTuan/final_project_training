@@ -22,7 +22,6 @@ public class UserController {
     }
 
     @PatchMapping(ApiEndpoints.USER_V1 + "/{id}/locked")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
     public UserRes lockUser(@PathVariable int id) {
         return userService.updateUserLock(id);
     }

@@ -42,7 +42,6 @@ public class TaskControllerTest extends AbstractTest {
 
     private TaskRes res;
     private TaskReq taskReq;
-    private Task task;
 
     @InjectMocks
     private TaskController taskController;
@@ -51,23 +50,8 @@ public class TaskControllerTest extends AbstractTest {
     @Before
     public void setUp() {
         super.setUp();
-        User user = User.builder()
-                .id(1)
-                .username("tuanvo123")
-                .email("test@test.com")
-                .password("$2a$10$z7G...")
-                .firstName("Vo")
-                .lastName("Tuan")
-                .status(AccountStatus.ACTIVE)
-                .build();
 
-        task = Task.builder()
-                .id(1)
-                .user(user)
-                .status(ProgressStatus.TODO)
-                .completeDate(null)
-                .name("Feature Manager User")
-                .build();
+
 
         res = new TaskRes(
                 1,
@@ -292,7 +276,6 @@ public class TaskControllerTest extends AbstractTest {
 
     @Test
     public void handleException_WhenTaskComplete_RequestUpdateCompleteTask() throws Exception {
-        task.setStatus(ProgressStatus.COMPLETE);
         doThrow(new BadRequestException(MessageException.TASK_IS_COMPLETED))
                 .when(taskService).updateTaskCompleted(anyInt());
 
@@ -308,7 +291,6 @@ public class TaskControllerTest extends AbstractTest {
 
     @Test
     public void handleException_WhenTaskComplete_RequestDeleteTask() throws Exception {
-        task.setStatus(ProgressStatus.COMPLETE);
         doThrow(new BadRequestException(MessageException.TASK_IS_COMPLETED))
                 .when(taskService).deleteTask(anyInt());
 

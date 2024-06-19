@@ -33,23 +33,12 @@ public class UserControllerTest extends AbstractTest {
     @InjectMocks
     private UserController userController;
 
-    private User user;
     private UserRes userRes;
 
     @Override
     @Before
     public void setUp() {
         super.setUp();
-
-        user = User.builder()
-                .id(1)
-                .username("tuanvo123")
-                .email("test@test.com")
-                .password("$2a$10$z7G...")
-                .firstName("Vo")
-                .lastName("Tuan")
-                .status(AccountStatus.ACTIVE)
-                .build();
 
         userRes = new UserRes(1,"votuan123","tuan","vo","vothanhtuan069@gmail.com",AccountStatus.ACTIVE,Collections.emptyList());
     }
@@ -68,7 +57,7 @@ public class UserControllerTest extends AbstractTest {
 
         mvc.perform(MockMvcRequestBuilders.patch(END_POINT + "/1/locked")
                         .contentType(MediaType.APPLICATION_JSON_VALUE))
-                .andExpect(status().isNoContent());
+                .andExpect(status().isOk());
     }
 
     @Test
