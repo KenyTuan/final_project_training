@@ -5,7 +5,6 @@ import com.test.finalproject.model.dtos.auth.*;
 import com.test.finalproject.service.AuthService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
@@ -27,17 +26,16 @@ public class AuthController {
         return authService.register(authReq);
     }
 
-    @PostMapping(ApiEndpoints.ACC_V1 + "/generate-password-rest-token")
+    @PostMapping(ApiEndpoints.ACC_V1 + "/forget-password/request")
     @ResponseStatus(HttpStatus.CREATED)
     public void createPasswordRestToken(@RequestParam(name = "email") String email) {
-        authService.createPasswordRestToken(email);
+        authService.requestForgotPassword(email);
     }
 
-    @PatchMapping(ApiEndpoints.ACC_V1 +"/confirm-password-rest-token")
+    @PatchMapping(ApiEndpoints.ACC_V1 +"/forget-password")
     public void confirmPasswordRestToken(
-            @RequestParam(name = "email") String email,
-            @RequestParam(name = "token") String token) {
-        authService.confirmPasswordRestToken(token,email);
+            @RequestBody @Valid RequestForgot requestForgot) {
+        authService.forgotPassword(requestForgot);
     }
 
 }

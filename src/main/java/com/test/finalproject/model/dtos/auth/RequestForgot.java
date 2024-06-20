@@ -1,19 +1,17 @@
 package com.test.finalproject.model.dtos.auth;
 
 import com.test.finalproject.constants.MessageException;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
-import jakarta.validation.constraints.Size;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
 
 import java.io.Serializable;
 
-@Setter @Getter @Builder
-public class AuthReq implements Serializable {
-
-    @Size(min = 5,max = 255,message = MessageException.INVALID_USERNAME)
-    private String username;
+@Getter @Setter @Builder
+public class RequestForgot implements Serializable {
 
     @Pattern(
             regexp = "^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[@#$%^&+=])(?=\\S+$).{8,20}$",
@@ -21,4 +19,9 @@ public class AuthReq implements Serializable {
     )
     private String password;
 
+    @Email(message = MessageException.INVALID_EMAIL)
+    private String email;
+
+    @NotBlank(message = MessageException.REQUIRED_TOKEN)
+    private String token;
 }

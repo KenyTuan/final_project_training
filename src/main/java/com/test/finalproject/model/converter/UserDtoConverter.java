@@ -22,6 +22,7 @@ public class UserDtoConverter {
                 user.getFirstName(),
                 user.getLastName(),
                 user.getEmail(),
+                user.getRole(),
                 user.getStatus(),
                 user.getTasks() != null ? TaskDtoConverter.toModelList(user.getTasks()): Collections.emptyList()
         );

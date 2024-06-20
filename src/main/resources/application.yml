@@ -1,16 +1,24 @@
 spring:
+  profiles:
+    active: ${ACTIVE_PROFILE:dev}
   application:
     name: FinalProject
   datasource:
-    url: jdbc:mysql://${MYSQL_HOST:localhost}:3301/DEV_demo
-    username: root
-    password: 123456
+    url: jdbc:mysql://${MYSQL_HOST:localhost}:${MYSQL_PORT:3306}/${MYSQL_DB}
+    username: ${MYSQL_USERNAME}
+    password: ${MYSQL_PASSWORD}
     driver-class-name: com.mysql.cj.jdbc.Driver
   jpa:
     hibernate:
       ddl-auto: update
     database-platform: org.hibernate.dialect.MySQLDialect
     show-sql: true
+  flyway:
+    baseline-on-migrate: true
+    baseline-version: 0
+    url: jdbc:mysql://${MYSQL_HOST:localhost}:${MYSQL_PORT:3306}/${MYSQL_DB}
+    user: ${MYSQL_USERNAME}
+    password: ${MYSQL_PASSWORD}
   mail:
     host: smtp.gmail.com
     username: ${MAIL_USERNAME}
@@ -27,7 +35,7 @@ spring:
 application:
   security:
     jwt:
-      secret-key: 034c3faf5961d9061cd1a14ef9f7012a58ef565714aae0850de136aa9b3f4f74
+      secret-key: ${SECRET_KEY}
       expiration: 86400000
       refresh-token:
         expiration: 604800000

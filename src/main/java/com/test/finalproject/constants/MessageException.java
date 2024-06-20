@@ -24,4 +24,5 @@ public class MessageException {
     public static final String REQUIRED_NAME = "Name Is Required!";
     public static final String REQUIRED_USER_ID = "User ID Is Required!";
     public static final String REQUIRED_TASK_ID = "Task ID Is Required!";
+    public static final String REQUIRED_TOKEN = "Token Is Required!";
 }

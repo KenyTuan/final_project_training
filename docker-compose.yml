@@ -1,12 +1,34 @@
 version: "3.0"
 
 services:
+  backend:
+    container_name: backend
+    build: .
+    restart: always
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/DEV_final_project
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: 123456
+    networks:
+      - project-final
+    depends_on:
+      - mysql
   mysql:
-    container_name: db_demo
+    container_name: db_final_project
     image: mysql
     restart: always
+    volumes:
+      - db-data:/var/lib/mysql
+    networks:
+      - project-final
     environment:
-      MYSQL_ROOT_PASSWORD: 123456
-      MYSQL_DATABASE: DEV_demo
-    ports:
-      - '3301:3306'
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: DEV_final_project
+    expose:
+      - 3306
+volumes:
+  db-data:
+networks:
+  project-final:

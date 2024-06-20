@@ -4,8 +4,6 @@ import com.test.finalproject.AbstractTest;
 import com.test.finalproject.config.JwtUtil;
 import com.test.finalproject.constants.ApiEndpoints;
 import com.test.finalproject.constants.MessageException;
-import com.test.finalproject.entity.User;
-import com.test.finalproject.enums.AccountStatus;
 import com.test.finalproject.exception.BadRequestException;
 import com.test.finalproject.exception.NotFoundException;
 import com.test.finalproject.model.dtos.auth.*;
@@ -19,14 +17,7 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
-import org.springframework.util.LinkedMultiValueMap;
-import org.springframework.util.MultiValueMap;
 import org.springframework.web.bind.MethodArgumentNotValidException;
-
-import java.sql.Timestamp;
-import java.time.LocalDateTime;
-import java.util.Collections;
-import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.mockito.Mockito.*;
@@ -51,6 +42,7 @@ public class AuthControllerTest extends AbstractTest {
     private AuthReq authReq;
     private AuthRes res;
     private RegisterReq registerReq;
+    private RequestForgot requestForgot;
 
     @Override
     @Before
@@ -72,6 +64,12 @@ public class AuthControllerTest extends AbstractTest {
                 .email("tuanvo132@gmail.com")
                 .firstName("Vo Thanh")
                 .lastName("Tuan")
+                .build();
+
+        requestForgot = RequestForgot.builder()
+                .token("token")
+                .email("tuanvo132@gmail.com")
+                .password("123@L.quy5401")
                 .build();
     }
 
@@ -102,24 +100,21 @@ public class AuthControllerTest extends AbstractTest {
     }
 
     @Test
-    public void success_CreateTokenVerify() throws Exception {
+    public void success_RequestForgotPassword() throws Exception {
 
-        mvc.perform(MockMvcRequestBuilders.post(END_POINT + "/generate-password-rest-token")
+        mvc.perform(MockMvcRequestBuilders.post(END_POINT + "/forget-password/request")
                         .param("email", "test@test.com")
                         .contentType(MediaType.APPLICATION_JSON_VALUE))
                 .andExpect(status().isCreated());
     }
 
     @Test
-    public void success_ConfirmTokenVerify() throws Exception {
+    public void success_ForgotPassword() throws Exception {
 
-        MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
+        String inputJson = super.mapToJson(requestForgot);
 
-        params.put("email", Collections.singletonList("test@test.com"));
-        params.put("token", Collections.singletonList("token"));
-
-        mvc.perform(MockMvcRequestBuilders.patch(END_POINT + "/confirm-password-rest-token")
-                        .queryParams(params)
+        mvc.perform(MockMvcRequestBuilders.patch(END_POINT + "/forget-password")
+                        .content(inputJson)
                         .contentType(MediaType.APPLICATION_JSON_VALUE))
                 .andExpect(status().isOk());
     }
@@ -275,18 +270,64 @@ public class AuthControllerTest extends AbstractTest {
     }
 
     @Test
-    public void handleException_NotFoundUserWithEmail_ConfirmTokenVerify() throws Exception {
+    public void handleException_InvalidPassword_ForgotPassword() throws Exception {
+        requestForgot.setPassword("123@SSSS");
 
-        MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
+        doThrow(new BadRequestException(MessageException.INVALID_PASSWORD))
+                .when(authService).forgotPassword(Mockito.any(RequestForgot.class));
 
-        params.put("email", Collections.singletonList("test@gaaasm.com"));
-        params.put("token", Collections.singletonList("token"));
+        String inputJson = super.mapToJson(requestForgot);
+        mvc.perform(MockMvcRequestBuilders.patch(END_POINT + "/forget-password")
+                        .contentType(MediaType.APPLICATION_JSON_VALUE)
+                        .content(inputJson))
+                .andExpect(status().isBadRequest())
+                .andExpect(result -> assertInstanceOf(MethodArgumentNotValidException.class, result.getResolvedException()))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.code").value("400"))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.message").value(MessageException.INVALID_PASSWORD));
+    }
 
+    @Test
+    public void handleException_InvalidEmail_ForgotPassword() throws Exception {
+        requestForgot.setEmail("vothanhgmail.com");
+
+        doThrow(new BadRequestException(MessageException.INVALID_EMAIL))
+                .when(authService).forgotPassword(Mockito.any(RequestForgot.class));
+
+        String inputJson = super.mapToJson(requestForgot);
+        mvc.perform(MockMvcRequestBuilders.patch(END_POINT + "/forget-password")
+                        .contentType(MediaType.APPLICATION_JSON_VALUE)
+                        .content(inputJson))
+                .andExpect(status().isBadRequest())
+                .andExpect(result -> assertInstanceOf(MethodArgumentNotValidException.class, result.getResolvedException()))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.code").value("400"))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.message").value(MessageException.INVALID_EMAIL));
+    }
+
+    @Test
+    public void handleException_RequiredToken_ForgotPassword() throws Exception {
+        requestForgot.setToken("");
+
+        doThrow(new BadRequestException(MessageException.REQUIRED_TOKEN))
+                .when(authService).forgotPassword(Mockito.any(RequestForgot.class));
+
+        String inputJson = super.mapToJson(requestForgot);
+        mvc.perform(MockMvcRequestBuilders.patch(END_POINT + "/forget-password")
+                        .contentType(MediaType.APPLICATION_JSON_VALUE)
+                        .content(inputJson))
+                .andExpect(status().isBadRequest())
+                .andExpect(result -> assertInstanceOf(MethodArgumentNotValidException.class, result.getResolvedException()))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.code").value("400"))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.message").value(MessageException.REQUIRED_TOKEN));
+    }
+
+    @Test
+    public void handleException_NotFoundUserWithEmail_ForgotPassword() throws Exception {
         doThrow(new NotFoundException(MessageException.NOT_FOUND_USER))
-                .when(authService).confirmPasswordRestToken(anyString(),anyString());
+                .when(authService).forgotPassword(any(RequestForgot.class));
 
-        mvc.perform(MockMvcRequestBuilders.patch(END_POINT + "/confirm-password-rest-token")
-                        .queryParams(params)
+        String inputJson = super.mapToJson(requestForgot);
+        mvc.perform(MockMvcRequestBuilders.patch(END_POINT + "/forget-password")
+                        .content(inputJson)
                         .contentType(MediaType.APPLICATION_JSON_VALUE))
                 .andExpect(status().isNotFound())
                 .andExpect(result -> assertInstanceOf(NotFoundException.class, result.getResolvedException()))
@@ -295,18 +336,14 @@ public class AuthControllerTest extends AbstractTest {
     }
 
     @Test
-    public void handleException_NotFoundUserWithToken_ConfirmTokenVerify() throws Exception {
-
-        MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
-
-        params.put("email", Collections.singletonList("test@test.com"));
-        params.put("token", Collections.singletonList("token"));
+    public void handleException_NotFoundUserWithToken_ForgotPassword() throws Exception {
 
         doThrow(new NotFoundException(MessageException.NOT_FOUND_USER))
-                .when(authService).confirmPasswordRestToken(anyString(),anyString());
+                .when(authService).forgotPassword(any(RequestForgot.class));
 
-        mvc.perform(MockMvcRequestBuilders.patch(END_POINT + "/confirm-password-rest-token")
-                        .queryParams(params)
+        String inputJson = super.mapToJson(requestForgot);
+        mvc.perform(MockMvcRequestBuilders.patch(END_POINT + "/forget-password")
+                        .content(inputJson)
                         .contentType(MediaType.APPLICATION_JSON_VALUE))
                 .andExpect(status().isNotFound())
                 .andExpect(result -> assertInstanceOf(NotFoundException.class, result.getResolvedException()))
@@ -315,17 +352,13 @@ public class AuthControllerTest extends AbstractTest {
     }
 
     @Test
-    public void handleException_WhenTokenExpired_ConfirmTokenVerify() throws Exception {
-        MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
-
-        params.put("email", Collections.singletonList("test@test.com"));
-        params.put("token", Collections.singletonList("token"));
-
+    public void handleException_WhenTokenExpired_ForgotPassword() throws Exception {
         doThrow(new BadRequestException(MessageException.TOKEN_EXPIRED))
-                .when(authService).confirmPasswordRestToken(anyString(),anyString());
+                .when(authService).forgotPassword(any(RequestForgot.class));
 
-        mvc.perform(MockMvcRequestBuilders.patch(END_POINT + "/confirm-password-rest-token")
-                        .queryParams(params)
+        String inputJson = super.mapToJson(requestForgot);
+        mvc.perform(MockMvcRequestBuilders.patch(END_POINT + "/forget-password")
+                        .content(inputJson)
                         .contentType(MediaType.APPLICATION_JSON_VALUE))
                 .andExpect(status().isBadRequest())
                 .andExpect(result -> assertInstanceOf(BadRequestException.class, result.getResolvedException()))
@@ -334,11 +367,11 @@ public class AuthControllerTest extends AbstractTest {
     }
 
     @Test
-    public void handleException_NotFoundUser_CreateTokenVerify() throws Exception {
+    public void handleException_NotFoundUser_RequestForgotPassword() throws Exception {
         doThrow(new NotFoundException(MessageException.NOT_FOUND_USER))
-                .when(authService).createPasswordRestToken(anyString());
+                .when(authService).requestForgotPassword(anyString());
 
-        mvc.perform(MockMvcRequestBuilders.post(END_POINT + "/generate-password-rest-token")
+        mvc.perform(MockMvcRequestBuilders.post(END_POINT + "/forget-password/request")
                         .param("email", "test@test.com")
                         .contentType(MediaType.APPLICATION_JSON_VALUE))
                 .andExpect(status().isNotFound())

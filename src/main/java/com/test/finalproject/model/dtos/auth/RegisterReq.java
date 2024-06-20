@@ -9,8 +9,10 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.io.Serializable;
+
 @Getter @Setter @Builder
-public class RegisterReq {
+public class RegisterReq implements Serializable {
 
     @Size(min = 5,max = 255,message = MessageException.INVALID_USERNAME)
     private String username;

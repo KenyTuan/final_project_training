@@ -4,6 +4,7 @@ import com.test.finalproject.config.JwtUtil;
 import com.test.finalproject.constants.MessageException;
 import com.test.finalproject.entity.User;
 import com.test.finalproject.enums.AccountStatus;
+import com.test.finalproject.enums.RoleName;
 import com.test.finalproject.exception.BadRequestException;
 import com.test.finalproject.exception.NotFoundException;
 import com.test.finalproject.model.converter.UserDtoConverter;
@@ -20,15 +21,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.security.SecureRandom;
 import java.sql.Timestamp;
-import java.util.Collections;
-import java.util.List;
-import java.util.Random;
 import java.util.UUID;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
-import java.util.stream.Stream;
 
 @Service
 @RequiredArgsConstructor
@@ -80,7 +74,7 @@ public class AuthServiceImpl implements AuthService {
 
         user.setStatus(AccountStatus.ACTIVE);
         user.setPassword(passwordEncoder.encode(req.getPassword()));
-
+        user.setRole(RoleName.USER);
         userRepository.save(user);
 
 
@@ -91,7 +85,7 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     @Transactional
-    public void createPasswordRestToken(String email) {
+    public void requestForgotPassword(String email) {
 
         final User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new NotFoundException(MessageException.NOT_FOUND_USER));
@@ -109,60 +103,22 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     @Transactional
-    public void confirmPasswordRestToken(String token, String email) {
+    public void forgotPassword(RequestForgot requestForgot) {
 
-        final User user = userRepository.findByEmailAndToken(email,token)
+        final User user = userRepository.findByEmailAndToken(requestForgot.getEmail(),requestForgot.getToken())
                 .orElseThrow(() -> new NotFoundException(MessageException.NOT_FOUND_TOKEN_VERIFY));
 
         if(user.isTokenExpired()){
             throw new BadRequestException(MessageException.TOKEN_EXPIRED);
         }
 
-        String password = generateSecureRandomPassword(4,2,
-                2,2);
-
-        user.setPassword(passwordEncoder.encode(password));
+        user.setExpiryDate(new Timestamp(System.currentTimeMillis()));
+        user.setPassword(passwordEncoder.encode(requestForgot.getPassword()));
 
         userRepository.save(user);
 
-        mailService.sendMail(user.getEmail(),"Your Password Rest!",
-                "Hi, " + user.getFirstName() + "!\n\nYour password : " + password);
+        mailService.sendMail(user.getEmail(),"Complete Reset Password!",
+                "Hi, " + user.getFirstName() + "!\n\nCompleted Reset Password!");
     }
-
-    public String generateSecureRandomPassword(int countNumbers, int countCharactersUpper,
-                                               int countCharactersLower, int countSpecialChars) {
-        Stream<Character> pwdStream = Stream.concat(getRandomNumbers(countNumbers),
-                Stream.concat(getRandomSpecialChars(countSpecialChars),
-                        Stream.concat(getRandomAlphabets(countCharactersUpper, true),
-                                getRandomAlphabets(countCharactersLower, false))));
-        List<Character> charList = pwdStream.collect(Collectors.toList());
-        Collections.shuffle(charList);
-        return charList.stream()
-                .collect(StringBuilder::new, StringBuilder::append, StringBuilder::append)
-                .toString();
-    }
-
-    private Stream<Character> getRandomSpecialChars(int count) {
-        Random random = new SecureRandom();
-        IntStream specialChars = random.ints(count, 33, 46);
-        return specialChars.mapToObj(data -> (char) data);
-    }
-
-    private Stream<Character> getRandomNumbers(int count) {
-        Random random = new SecureRandom();
-        IntStream specialChars = random.ints(count, 48, 58);
-        return specialChars.mapToObj(data -> (char) data);
-    }
-
-    private Stream<Character> getRandomAlphabets(int count, boolean checkToUpper) {
-        Random random = new SecureRandom();
-
-        int characterFrom = checkToUpper ? 65 : 97;
-        int characterTo = checkToUpper ? 90 : 122;
-
-        IntStream specialChars = random.ints(count, characterFrom, characterTo);
-        return specialChars.mapToObj(data -> (char) data);
-    }
-
 
 }
